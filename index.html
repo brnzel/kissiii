@@ -1415,7 +1415,7 @@ body::before {
 </head>
 <body>
 
-<div id="auth-screen">
+<div id="auth-screen" style="display:none;">
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-icon">⚡</div>
@@ -1500,6 +1500,9 @@ body::before {
         </button>
         <button onclick="openVisibilityDrawer()" title="Show / Hide Sections" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.2s;flex-shrink:0;">
           👁
+        </button>
+        <button onclick="authLogout()" title="Log Out" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.2s;flex-shrink:0;">
+          🚪
         </button>
       </div>
     </div>
@@ -1985,7 +1988,15 @@ if (!data.bin) data.bin = [];
 if (!data.reminders) data.reminders = [];
 let activeNoteId = null, saveTimer = null;
 
-function persist() { localStorage.setItem(STORE_KEY, JSON.stringify(data)); updateStats(); }
+function persist() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  updateStats();
+  // Cloud sync
+  if (typeof saveCloudData === 'function' && currentUser) {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(saveCloudData, 2000);
+  }
+}
 
 // ============================================================
 // TIMEZONE — GMT+5:30 (IST)
@@ -4223,6 +4234,20 @@ function authToggleMode() {
   document.getElementById('auth-err').textContent = '';
 }
 
+async function authLogout() {
+  await supa.auth.signOut();
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app-wrap').style.display = 'none';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-err').textContent = '';
+  document.getElementById('auth-btn').textContent = 'Sign In';
+  authMode = 'signin';
+  document.getElementById('auth-title').textContent = 'Welcome back 💕';
+  document.getElementById('auth-sub').textContent = 'Sign in to your account';
+}
+
 async function authSubmit() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
@@ -4254,6 +4279,7 @@ async function authSubmit() {
     currentUser = result.data.user;
     await loadCloudData();
     document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'flex';
   } catch(e) {
     err.textContent = 'Something went wrong. Try again.';
     btn.disabled = false;
