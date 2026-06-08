@@ -1368,8 +1368,71 @@ body::before {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 </style>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    #auth-screen {
+      position:fixed;inset:0;z-index:99999;
+      background:var(--bg);
+      display:flex;align-items:center;justify-content:center;
+      flex-direction:column;gap:0;
+    }
+    .auth-card {
+      background:var(--surface);border:1px solid var(--border2);
+      border-radius:20px;padding:40px;width:360px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.5);
+      display:flex;flex-direction:column;gap:16px;
+    }
+    .auth-logo { text-align:center;margin-bottom:8px; }
+    .auth-logo-icon { font-size:40px;margin-bottom:8px; }
+    .auth-logo-name { font-size:24px;font-weight:800;color:var(--text); }
+    .auth-logo-name span { color:var(--accent); }
+    .auth-title { font-size:18px;font-weight:700;color:var(--text);text-align:center; }
+    .auth-sub { font-size:13px;color:var(--text3);text-align:center;margin-top:-8px; }
+    .auth-input {
+      background:var(--surface2);border:1.5px solid var(--border);
+      border-radius:10px;padding:12px 14px;color:var(--text);
+      font-family:var(--font);font-size:14px;outline:none;
+      transition:border-color 0.2s;width:100%;box-sizing:border-box;
+    }
+    .auth-input:focus { border-color:var(--accent); }
+    .auth-input::placeholder { color:var(--text3); }
+    .auth-btn {
+      padding:13px;border-radius:10px;border:none;
+      background:var(--accent);color:white;
+      font-family:var(--font);font-size:15px;font-weight:700;
+      cursor:pointer;transition:opacity 0.2s;width:100%;
+    }
+    .auth-btn:hover { opacity:0.85; }
+    .auth-btn:disabled { opacity:0.5;cursor:default; }
+    .auth-switch { text-align:center;font-size:13px;color:var(--text3); }
+    .auth-switch a { color:var(--accent);cursor:pointer;text-decoration:none;font-weight:600; }
+    .auth-err { color:#ff6b6b;font-size:12px;text-align:center;min-height:16px; }
+    .auth-divider { display:flex;align-items:center;gap:10px;color:var(--text3);font-size:11px; }
+    .auth-divider::before,.auth-divider::after { content:'';flex:1;height:1px;background:var(--border); }
+  </style>
 </head>
 <body>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⚡</div>
+      <div class="auth-logo-name">Focus<span>Flow</span></div>
+    </div>
+    <div class="auth-title" id="auth-title">Welcome back 💕</div>
+    <div class="auth-sub" id="auth-sub">Sign in to your account</div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email address" />
+    <input class="auth-input" id="auth-password" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')authSubmit()" />
+    <div class="auth-err" id="auth-err"></div>
+    <button class="auth-btn" id="auth-btn" onclick="authSubmit()">Sign In</button>
+    <div class="auth-switch" id="auth-switch">
+      Don't have an account? <a onclick="authToggleMode()">Sign up</a>
+    </div>
+  </div>
+</div>
+
 
 <div class="titlebar">
   <div class="logo">
@@ -1652,7 +1715,7 @@ body::before {
             <div class="cal-month-stats">
               <div class="cal-stat-row"><span style="color:var(--text2)">Days ticked</span><span class="cal-stat-val" id="cal-stat-ticked" style="color:var(--accent2)">0</span></div>
               <div class="cal-stat-row"><span style="color:var(--text2)">Tasks due</span><span class="cal-stat-val" id="cal-stat-tasks" style="color:var(--accent)">0</span></div>
-              <div class="cal-stat-row"><span style="color:var(--text2)">Reminders</span><span class="cal-stat-val" id="cal-stat-reminders" style="color:var(--accent3)">0</span></div>
+
             </div>
           </div>
 
@@ -4137,5 +4200,125 @@ ctPreview();
   </div>
   <div style="padding:8px;" id="vis-items"></div>
 </div>
+
+<script>
+// ── Supabase Auth & Sync ──
+const SUPA_URL = 'https://sjtvhgpsuhzyehchueme.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqdHZoZ3BzdWh6eWVoY2h1ZW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MzMwMzcsImV4cCI6MjA5NjUwOTAzN30.NaWy3dK6zfQgSyGYtiYJg9HdovsKbaxwCchkKx0G5n0';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let authMode = 'signin'; // 'signin' | 'signup'
+let currentUser = null;
+let syncTimeout = null;
+
+function authToggleMode() {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  const isSignup = authMode === 'signup';
+  document.getElementById('auth-title').textContent = isSignup ? 'Create account 🌸' : 'Welcome back 💕';
+  document.getElementById('auth-sub').textContent = isSignup ? 'Join FocusFlow' : 'Sign in to your account';
+  document.getElementById('auth-btn').textContent = isSignup ? 'Sign Up' : 'Sign In';
+  document.getElementById('auth-switch').innerHTML = isSignup
+    ? 'Already have an account? <a onclick="authToggleMode()">Sign in</a>'
+    : "Don't have an account? <a onclick='authToggleMode()'>Sign up</a>";
+  document.getElementById('auth-err').textContent = '';
+}
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-btn');
+  const err = document.getElementById('auth-err');
+
+  if (!email || !password) { err.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = authMode === 'signin' ? 'Signing in...' : 'Creating account...';
+  err.textContent = '';
+
+  try {
+    let result;
+    if (authMode === 'signin') {
+      result = await supa.auth.signInWithPassword({ email, password });
+    } else {
+      result = await supa.auth.signUp({ email, password });
+    }
+
+    if (result.error) {
+      err.textContent = result.error.message;
+      btn.disabled = false;
+      btn.textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+      return;
+    }
+
+    currentUser = result.data.user;
+    await loadCloudData();
+    document.getElementById('auth-screen').style.display = 'none';
+  } catch(e) {
+    err.textContent = 'Something went wrong. Try again.';
+    btn.disabled = false;
+    btn.textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+  }
+}
+
+async function loadCloudData() {
+  if (!currentUser) return;
+  try {
+    const { data: rows } = await supa
+      .from('user_data')
+      .select('data')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    if (rows && rows.data) {
+      const cloudData = JSON.parse(rows.data);
+      // Merge cloud into local - cloud wins
+      Object.assign(data, cloudData);
+      persist();
+      renderAll();
+    }
+  } catch(e) { /* first time user, no data yet */ }
+}
+
+async function saveCloudData() {
+  if (!currentUser) return;
+  try {
+    await supa.from('user_data').upsert({
+      user_id: currentUser.id,
+      data: JSON.stringify(data),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch(e) { console.log('Sync error:', e); }
+}
+
+// Auto-save to cloud 3s after any change
+const _origPersist = persist;
+window.persist = function() {
+  _origPersist();
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(saveCloudData, 3000);
+};
+
+function renderAll() {
+  renderNotes();
+  renderTasks();
+  renderCalendar();
+  renderSkTable();
+  renderMedicine();
+  checkAlerts();
+  updateStats();
+}
+
+// Check if already logged in
+(async function initAuth() {
+  const { data: { session } } = await supa.auth.getSession();
+  if (session && session.user) {
+    currentUser = session.user;
+    await loadCloudData();
+    document.getElementById('auth-screen').style.display = 'none';
+  }
+})();
+</script>
+
 </body>
 </html>
