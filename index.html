@@ -4290,40 +4290,37 @@ async function authSubmit() {
 async function loadCloudData() {
   if (!currentUser) return;
   try {
-    const { data: rows } = await supa
+    const { data: rows, error } = await supa
       .from('user_data')
       .select('data')
       .eq('user_id', currentUser.id)
       .single();
 
+    if (error) { console.error('Load error:', error); return; }
     if (rows && rows.data) {
+      console.log('Loaded from cloud ✅');
       const cloudData = JSON.parse(rows.data);
-      // Merge cloud into local - cloud wins
       Object.assign(data, cloudData);
-      persist();
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
       renderAll();
+    } else {
+      console.log('No cloud data yet for this user');
     }
-  } catch(e) { /* first time user, no data yet */ }
+  } catch(e) { console.error('Load exception:', e); }
 }
 
 async function saveCloudData() {
-  if (!currentUser) return;
+  if (!currentUser) { console.log('No user, skipping save'); return; }
   try {
-    await supa.from('user_data').upsert({
+    const { error } = await supa.from('user_data').upsert({
       user_id: currentUser.id,
       data: JSON.stringify(data),
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
-  } catch(e) { console.log('Sync error:', e); }
+    if (error) { console.error('Save error:', error); }
+    else { console.log('Saved to cloud ✅', new Date().toLocaleTimeString()); }
+  } catch(e) { console.error('Save exception:', e); }
 }
-
-// Auto-save to cloud 3s after any change
-const _origPersist = persist;
-window.persist = function() {
-  _origPersist();
-  clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(saveCloudData, 3000);
-};
 
 function renderAll() {
   renderNotes();
