@@ -1988,6 +1988,8 @@ if (!data.bin) data.bin = [];
 if (!data.reminders) data.reminders = [];
 let activeNoteId = null, saveTimer = null;
 
+var currentUser = null;
+var syncTimeout = null;
 function persist() {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
   updateStats();
@@ -4219,8 +4221,6 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 let authMode = 'signin'; // 'signin' | 'signup'
-let currentUser = null;
-let syncTimeout = null;
 
 function authToggleMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
