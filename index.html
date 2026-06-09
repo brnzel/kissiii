@@ -1412,6 +1412,41 @@ body::before {
     .auth-divider { display:flex;align-items:center;gap:10px;color:var(--text3);font-size:11px; }
     .auth-divider::before,.auth-divider::after { content:'';flex:1;height:1px;background:var(--border); }
   </style>
+<script>
+function toggleAuthPass() {
+  var inp = document.getElementById('auth-password');
+  var eye = document.getElementById('auth-pass-eye');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  eye.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+function toggleResetPass() {
+  var inp = document.getElementById('reset-password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+async function submitResetPassword() {
+  var password = document.getElementById('reset-password').value;
+  var err = document.getElementById('reset-err');
+  if (!password || password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+  var result = await supa.auth.updateUser({ password: password });
+  if (result.error) { err.textContent = result.error.message; return; }
+  err.style.color = '#4ade80';
+  err.textContent = 'Password updated! Please sign in again.';
+  setTimeout(function() {
+    document.getElementById('reset-screen').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-wrap').style.display = 'none';
+    window.location.hash = '';
+  }, 2000);
+}
+window.addEventListener('load', async function() {
+  var hash = window.location.hash;
+  if (hash && hash.includes('access_token') && hash.includes('type=recovery')) {
+    document.getElementById('reset-screen').style.display = 'flex';
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'none';
+  }
+});
+</script>
 </head>
 <body>
 
