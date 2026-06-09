@@ -1438,20 +1438,7 @@ async function submitResetPassword() {
     window.location.hash = '';
   }, 2000);
 }
-window.addEventListener('load', async function() {
-  var hash = window.location.hash;
-  if (hash && hash.includes('access_token') && hash.includes('type=recovery')) {
-    // Wait for Supabase to parse the token from URL
-    await new Promise(function(r) { setTimeout(r, 1000); });
-    var sessionResult = await supa.auth.getSession();
-    if (sessionResult.data && sessionResult.data.session) {
-      currentUser = sessionResult.data.session.user;
-    }
-    document.getElementById('reset-screen').style.display = 'flex';
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-wrap').style.display = 'none';
-  }
-});
+
 </script>
 </head>
 <body>
@@ -4266,6 +4253,16 @@ ctPreview();
 const SUPA_URL = 'https://sjtvhgpsuhzyehchueme.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqdHZoZ3BzdWh6eWVoY2h1ZW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MzMwMzcsImV4cCI6MjA5NjUwOTAzN30.NaWy3dK6zfQgSyGYtiYJg9HdovsKbaxwCchkKx0G5n0';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Listen for password recovery event
+supa.auth.onAuthStateChange(async function(event, session) {
+  if (event === 'PASSWORD_RECOVERY') {
+    currentUser = session.user;
+    document.getElementById('reset-screen').style.display = 'flex';
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'none';
+  }
+});
 
 let authMode = 'signin'; // 'signin' | 'signup'
 
