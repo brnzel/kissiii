@@ -1430,6 +1430,9 @@ body::before {
     <div class="auth-switch" id="auth-switch">
       Don't have an account? <a onclick="authToggleMode()">Sign up</a>
     </div>
+    <div class="auth-switch" id="auth-forgot-wrap">
+      <a onclick="authForgotPassword()">Forgot password?</a>
+    </div>
   </div>
 </div>
 
@@ -4232,6 +4235,26 @@ function authToggleMode() {
     ? 'Already have an account? <a onclick="authToggleMode()">Sign in</a>'
     : "Don't have an account? <a onclick='authToggleMode()'>Sign up</a>";
   document.getElementById('auth-err').textContent = '';
+}
+
+async function authForgotPassword() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) {
+    document.getElementById('auth-err').textContent = 'Enter your email first.';
+    return;
+  }
+  const err = document.getElementById('auth-err');
+  err.textContent = '';
+  const { error } = await supa.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href
+  });
+  if (error) {
+    err.textContent = error.message;
+  } else {
+    err.style.color = '#4ade80';
+    err.textContent = 'Reset link sent! Check your email 📧';
+    setTimeout(() => { err.style.color = '#ff6b6b'; err.textContent = ''; }, 5000);
+  }
 }
 
 async function authLogout() {
