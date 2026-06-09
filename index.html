@@ -1441,6 +1441,12 @@ async function submitResetPassword() {
 window.addEventListener('load', async function() {
   var hash = window.location.hash;
   if (hash && hash.includes('access_token') && hash.includes('type=recovery')) {
+    // Wait for Supabase to parse the token from URL
+    await new Promise(function(r) { setTimeout(r, 1000); });
+    var sessionResult = await supa.auth.getSession();
+    if (sessionResult.data && sessionResult.data.session) {
+      currentUser = sessionResult.data.session.user;
+    }
     document.getElementById('reset-screen').style.display = 'flex';
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-wrap').style.display = 'none';
