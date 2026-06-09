@@ -4339,6 +4339,10 @@ function renderAll() {
     currentUser = session.user;
     await loadCloudData();
     document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'flex';
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-wrap').style.display = 'none';
   }
 })();
 </script>
