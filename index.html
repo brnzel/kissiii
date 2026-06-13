@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>FocusFlow</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -2644,6 +2645,13 @@ function toggleSection(id) {
   persist();
   applyVisibility();
   renderVisItems();
+  // If we just hid the currently active panel, switch to Notes
+  if (data.hiddenSections[id]) {
+    const btn = document.getElementById(id);
+    if (btn && btn.classList.contains('active')) {
+      showPanel('notes');
+    }
+  }
 }
 
 function renderVisItems() {
