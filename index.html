@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>FocusFlow</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩷</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -3107,7 +3107,9 @@ function skCellKey(dateKey, stepId) {
 function skToggle(dateKey, stepId, el) {
   // Only allow ticking today
   const todayKey = skDateKey(nowIST());
-  if (dateKey !== todayKey) return;
+  // Allow today and up to 2 previous days, block future
+  const dayDiff = (new Date(todayKey) - new Date(dateKey)) / 86400000;
+  if (dayDiff < 0 || dayDiff > 2) return; // future or more than 2 days ago
   const k = skCellKey(dateKey, stepId);
   const wasChecked = !!data.skChecked[k];
   if (wasChecked) delete data.skChecked[k];
@@ -3314,7 +3316,8 @@ function renderSkTable() {
       const isChecked = !!data.skChecked[ck];
       const isToday = dk === todayKey;
       const productVal = data.skProducts[ck] || '';
-      const isLocked = dk !== todayKey;
+      const dayDiff = (new Date(todayKey) - new Date(dk)) / 86400000;
+      const isLocked = dayDiff < 0 || dayDiff > 2; // lock future + older than 2 days
       const heartStyle = isNight && isChecked
         ? 'font-size:28px;line-height:1;user-select:none;filter:drop-shadow(0 0 6px #a855f7);'
         : 'font-size:28px;line-height:1;user-select:none;';
